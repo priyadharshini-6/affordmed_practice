@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-// ---- Mock Data (would come from backend/API in a real app) ----
 
 const monthlyUsage = {
   January: 320,
@@ -21,16 +20,14 @@ const applianceUsage = [
   { name: "Others", units: 10 },
 ];
 
-const ratePerUnit = 6; // currency units per kWh
+const ratePerUnit = 6; 
 const highUsageThreshold = 350;
 
-// ---- Helper ----
 
 function totalUnits(list) {
   return list.reduce((sum, item) => sum + item.units, 0);
 }
 
-// ---- Components ----
 
 function AlertBanner({ current, threshold }) {
   if (current <= threshold) return null;
@@ -160,7 +157,7 @@ function BillSummary({ units, rate }) {
   );
 }
 
-// ---- Main App ----
+
 
 export default function ElectricityDashboard() {
   const [selectedMonth] = useState(currentMonth);
@@ -190,7 +187,6 @@ export default function ElectricityDashboard() {
   );
 }
 
-// ---- Styles (black & white only, no animations) ----
 
 const styles = {
   page: {
