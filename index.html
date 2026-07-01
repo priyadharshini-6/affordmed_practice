@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Electricity Usage Dashboard</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    color: #000000;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 20px;
+  }
+  .page {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 22px;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 10px;
+  }
+  .subtitle {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  .section {
+    margin-bottom: 30px;
+  }
+  h2 {
+    font-size: 16px;
+    border-bottom: 1px solid #000000;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    text-align: left;
+    border-bottom: 1px solid #000000;
+    padding: 6px;
+    font-size: 14px;
+  }
+  td {
+    border-bottom: 1px solid #cccccc;
+    padding: 6px;
+    font-size: 14px;
+  }
+  .bar-outer {
+    display: inline-block;
+    width: 100px;
+    height: 10px;
+    border: 1px solid #000000;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .bar-inner {
+    height: 100%;
+    background-color: #000000;
+  }
+  .percent-text {
+    font-size: 12px;
+  }
+  .note {
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .alert-box {
+    border: 1px solid #000000;
+    padding: 10px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<!-- React, ReactDOM, and Babel loaded from CDN -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+
+const { useState } = React;
+
+
+const monthlyUsage = {
+  January: 320,
+  February: 290,
+  March: 410,
+  April: 260,
+};
+
+const currentMonth = "April";
+const previousMonth = "March";
+
+const applianceUsage = [
+  { name: "Air Conditioner", units: 120 },
+  { name: "Refrigerator", units: 60 },
+  { name: "Washing Machine", units: 30 },
+  { name: "Lighting", units: 25 },
+  { name: "Television", units: 15 },
+  { name: "Others", units: 10 },
+];
+
+const ratePerUnit = 6; // currency units per kWh
+const highUsageThreshold = 350;
+
+
+function totalUnits(list) {
+  return list.reduce((sum, item) => sum + item.units, 0);
+}
+
+// ---- Components ----
+
+function AlertBanner({ current, threshold }) {
+  if (current <= threshold) return null;
+
+  return (
+    <div className="alert-box">
+      <strong>Alert:</strong> Your usage this month ({current} units) is
+      higher than usual. Please check the appliance breakdown below.
+    </div>
+  );
+}
+
+function MonthComparison({ months, current, previous }) {
+  const maxUnits = Math.max(...Object.values(months));
+
+  return (
+    <div className="section">
+      <h2>Monthly Comparison</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Units Used</th>
+            <th>Usage</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(months).map(([month, units]) => (
+            <tr key={month}>
+              <td>
+                {month}
+                {month === current ? " (Current)" : ""}
+              </td>
+              <td>{units} kWh</td>
+              <td>
+                <div className="bar-outer">
+                  <div
+                    className="bar-inner"
+                    style={{ width: (units / maxUnits) * 100 + "%" }}
+                  />
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="note">
+        {months[current] > months[previous]
+          ? `You used ${months[current] - months[previous]} more units than last month.`
+          : `You used ${months[previous] - months[current]} fewer units than last month.`}
+      </p>
+    </div>
+  );
+}
+
+function ApplianceBreakdown({ appliances }) {
+  const total = totalUnits(appliances);
+  const sorted = [...appliances].sort((a, b) => b.units - a.units);
+
+  return (
+    <div className="section">
+      <h2>Where Your Electricity Is Being Used</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Appliance</th>
+            <th>Units</th>
+            <th>Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((item) => {
+            const percent = Math.round((item.units / total) * 100);
+            return (
+              <tr key={item.name}>
+                <td>{item.name}</td>
+                <td>{item.units} kWh</td>
+                <td>
+                  <div className="bar-outer">
+                    <div
+                      className="bar-inner"
+                      style={{ width: percent + "%" }}
+                    />
+                  </div>
+                  <span className="percent-text">{percent}%</span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="note">
+        Highest consumption: <strong>{sorted[0].name}</strong>
+      </p>
+    </div>
+  );
+}
+
+function BillSummary({ units, rate }) {
+  const amount = units * rate;
+
+  return (
+    <div className="section">
+      <h2>Bill Summary (Current Month)</h2>
+      <table>
+        <tbody>
+          <tr>
+            <td>Total Units Consumed</td>
+            <td>{units} kWh</td>
+          </tr>
+          <tr>
+            <td>Rate per Unit</td>
+            <td>Rs. {rate}</td>
+          </tr>
+          <tr>
+            <td><strong>Estimated Bill</strong></td>
+            <td><strong>Rs. {amount}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ---- Main App ----
+
+function ElectricityDashboard() {
+  const [selectedMonth] = useState(currentMonth);
+
+  return (
+    <div className="page">
+      <h1>Electricity Usage Dashboard</h1>
+      <p className="subtitle">
+        Viewing data for: <strong>{selectedMonth}</strong>
+      </p>
+
+      <AlertBanner
+        current={monthlyUsage[currentMonth]}
+        threshold={highUsageThreshold}
+      />
+
+      <MonthComparison
+        months={monthlyUsage}
+        current={currentMonth}
+        previous={previousMonth}
+      />
+
+      <ApplianceBreakdown appliances={applianceUsage} />
+
+      <BillSummary units={monthlyUsage[currentMonth]} rate={ratePerUnit} />
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<ElectricityDashboard />);
+
+</script>
+
+</body>
+</html>
